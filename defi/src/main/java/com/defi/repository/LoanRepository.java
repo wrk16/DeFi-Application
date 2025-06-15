@@ -1,0 +1,20 @@
+package com.defi.repository;
+
+import com.defi.entity.Loan;
+import com.defi.entity.Loan.LoanStatus;
+import com.defi.entity.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Repository
+public interface LoanRepository extends JpaRepository<Loan, Long> {
+    List<Loan> findByStatus(Loan.LoanStatus status);
+    List<Loan> findByBorrowerAndStatus(User borrower, Loan.LoanStatus status);
+    List<Loan> findByBorrowerAndStatusIn(User borrower, List<Loan.LoanStatus> statuses);
+    List<Loan> findByStatusAndBorrower_EmailNot(Loan.LoanStatus status, String email);
+	List<Loan> findByLenderAndStatusIn(User user, List<LoanStatus> of);
+	List<Loan> findByStatusAndDeadlineBefore(LoanStatus active, LocalDateTime now);
+}

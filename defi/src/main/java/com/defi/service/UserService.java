@@ -1,0 +1,163 @@
+package com.defi.service;
+
+import com.defi.entity.User;
+import com.defi.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.web3j.crypto.Credentials;
+import org.web3j.crypto.ECKeyPair;
+import org.web3j.crypto.Keys;
+import org.web3j.protocol.Web3j;
+import org.web3j.protocol.core.DefaultBlockParameterName;
+import org.web3j.protocol.core.methods.response.TransactionReceipt;
+import org.web3j.protocol.http.HttpService;
+import org.web3j.tx.Transfer;
+import org.web3j.utils.Convert;
+
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.security.SecureRandom;
+import java.util.List;
+import java.util.Optional;
+
+@Service
+public class UserService implements UserDetailsService {
+
+    private static final String INFURA_URL = "https://sepolia.infura.io/v3/55d33ba38a934e72901c512d26818416";
+    private static final String WALLET_PASSWORD = "user-secure-password";
+    private static final String FUNDER_PRIVATE_KEY = "YOUR_FUNDER_PRIVATE_KEY"; // Replace this with real private key for deployment
+
+    private final Web3j web3j = Web3j.build(new HttpService(INFURA_URL));
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    // Constructor injection to avoid circular dependency
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
+
+    // Spring Security UserDetailsService implementation
+    @Override
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        Optional<User> userOptional = userRepository.findByEmail(email);
+        
+        if (userOptional.isEmpty()) {
+            throw new UsernameNotFoundException("User not found with email: " + email);
+        }
+
+        User user = userOptional.get();
+        
+        return org.springframework.security.core.userdetails.User.builder()
+                .username(email)
+                .password(user.getPassword())
+                .roles("USER")
+                .build();
+    }
+
+    /**
+     * Registers a user, generates wallet, and funds it.
+     */
+    public User registerUser(String name, String email, String password) throws Exception {
+        // Check if user already exists
+        if (userRepository.findByEmail(email).isPresent()) {
+            throw new RuntimeException("User already exists with email: " + email);
+        }
+
+        // 1. Generate Ethereum wallet
+        SecureRandom random = new SecureRandom();
+        ECKeyPair keyPair = Keys.createEcKeyPair(random);
+        Credentials credentials = Credentials.create(keyPair);
+        String walletAddress = credentials.getAddress();
+        String privateKey = String.format("%064x", keyPair.getPrivateKey());
+
+        // 2. Encrypt password
+        String encodedPassword = passwordEncoder.encode(password);
+
+        // 3. Save user
+        User user = new User(name, email, encodedPassword, walletAddress, privateKey, BigDecimal.valueOf(150000));
+        userRepository.save(user);
+
+        // 4. Fund wallet (comment out for testing without actual blockchain interaction)
+        try {
+            fundWallet(walletAddress);
+        } catch (Exception e) {
+            System.out.println("⚠️ Warning: Could not fund wallet (likely testnet issue): " + e.getMessage());
+            // Don't fail registration if wallet funding fails
+        }
+
+        System.out.println("✅ Registered user: " + name + " | Wallet: " + walletAddress);
+        return user;
+    }
+
+    /**
+     * Validates user login credentials (Note: This method might not be needed with Spring Security)
+     */
+    public boolean validateUser(String email, String password) {
+        Optional<User> userOptional = userRepository.findByEmail(email);
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            return passwordEncoder.matches(password, user.getPassword());
+        }
+        return false;
+    }
+
+    /**
+     * Adds stable money to the user balance (off-chain balance).
+     */
+    public void addStableMoney(String email, BigDecimal amount) {
+        Optional<User> optionalUser = userRepository.findByEmail(email);
+        if (optionalUser.isPresent()) {
+            User user = optionalUser.get();
+            user.deposit(amount);
+            userRepository.save(user);
+            System.out.println("💰 Added " + amount + " to user: " + email);
+        } else {
+            System.err.println("⚠️ User not found for email: " + email);
+        }
+    }
+
+    /**
+     * Funds user wallet with ETH (on-chain).
+     */
+    private void fundWallet(String recipientAddress) throws Exception {
+        if ("YOUR_FUNDER_PRIVATE_KEY".equals(FUNDER_PRIVATE_KEY)) {
+            System.out.println("⚠️ Skipping wallet funding - Please set real FUNDER_PRIVATE_KEY");
+            return;
+        }
+        
+        Credentials credentials = Credentials.create(FUNDER_PRIVATE_KEY);
+        BigDecimal amount = Convert.toWei("5.0", Convert.Unit.ETHER); // Fund with 5 ETH
+
+        TransactionReceipt receipt = Transfer.sendFunds(web3j, credentials, recipientAddress, amount, Convert.Unit.WEI).send();
+        System.out.println("🚀 Funded wallet: " + recipientAddress + " | TX Hash: " + receipt.getTransactionHash());
+    }
+
+    /**
+     * Returns current ETH balance of wallet (on-chain).
+     */
+    public BigDecimal getUserBalance(String walletAddress) throws Exception {
+        BigInteger balanceInWei = web3j.ethGetBalance(walletAddress, DefaultBlockParameterName.LATEST)
+                .send()
+                .getBalance();
+        return Convert.fromWei(new BigDecimal(balanceInWei), Convert.Unit.ETHER);
+    }
+
+    /**
+     * Find user by email.
+     */
+    public Optional<User> getUserByEmail(String email) {
+        return userRepository.findByEmail(email);
+    }
+
+    /**
+     * Get all users (admin/reporting purpose).
+     */
+    public List<User> getAll() {
+        return userRepository.findAll();
+    }
+}

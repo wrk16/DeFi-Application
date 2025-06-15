@@ -1,0 +1,50 @@
+package com.defi.controller;
+
+import com.defi.entity.Loan;
+import com.defi.service.LoanService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.math.BigDecimal;
+import java.util.List;
+
+@RestController
+@RequestMapping("/loans")
+public class LoanController {
+
+    @Autowired
+    private LoanService loanService;
+
+    @PostMapping("/request/{borrowerEmail}/{loanAmount}/{collateralEth}/{durationDays}")
+    public ResponseEntity<?> requestLoan(@PathVariable String borrowerEmail,
+                                         @PathVariable BigDecimal loanAmount,
+                                         @PathVariable String collateralEth,
+                                         @PathVariable int durationDays) {
+        Loan loan = loanService.requestLoan(borrowerEmail, loanAmount, BigDecimal.valueOf(Double.valueOf(collateralEth)), durationDays);
+        return ResponseEntity.ok("Loan request submitted: " + loan.getId());
+    }
+
+    @GetMapping("/")
+    public ResponseEntity<List<Loan>> getAvailableLoansForOthers() {
+        return ResponseEntity.ok(loanService.getAvailableLoansExcludingCurrentUser());
+    }
+
+    @PostMapping("/accept/{loanId}/{lenderEmail}")
+    public ResponseEntity<?> acceptLoan(@PathVariable String lenderEmail, @PathVariable Long loanId) throws Exception {
+        Loan loan = loanService.acceptLoan(lenderEmail.trim(), loanId);
+        return ResponseEntity.ok("Loan accepted. Loan ID: " + loan.getId());
+    }
+
+    @PostMapping("/repay/{loanId}")
+    public ResponseEntity<?> repayLoan(@PathVariable Long loanId) throws Exception {
+        loanService.repayLoan(loanId);
+        return ResponseEntity.ok("Loan repaid successfully.");
+    }
+
+    @PostMapping("/liquidate/{loanId}")
+    public ResponseEntity<?> liquidateLoan(@PathVariable Long loanId) throws Exception {
+        loanService.liquidateLoan(loanId);
+        return ResponseEntity.ok("Loan liquidated.");
+    }
+}

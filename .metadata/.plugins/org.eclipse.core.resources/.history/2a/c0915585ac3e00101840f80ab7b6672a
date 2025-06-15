@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>DeFi Platform - Home</title>
+</head>
+<body>
+<div th:replace="layout :: body(~{::content})">
+  <div th:fragment="content">
+    <div class="row">
+      <div class="col-lg-12 text-center mb-5">
+        <h1 class="display-4">Welcome to DeFi Platform</h1>
+        <p class="lead">A decentralized finance platform powered by Ethereum blockchain</p>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">Register</h5>
+            <p class="card-text">Create a new account with an Ethereum wallet</p>
+            <a th:href="@{/register}" class="btn btn-primary">Register Now</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">Loans</h5>
+            <p class="card-text">View available loans or request new ones</p>
+            <a th:href="@{/loans}" class="btn btn-primary">Explore Loans</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">Request Loan</h5>
+            <p class="card-text">Request a new loan with ETH collateral</p>
+            <a th:href="@{/loan/request}" class="btn btn-primary">Request Loan</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">Repay Loan</h5>
+            <a th:href="@{/loan/repay}" class="btn btn-primary">Repay your Loan</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row mt-5">
+      <div class="col-lg-12">
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">How It Works</h5>
+            <p class="card-text">
+              Our DeFi platform allows you to borrow and lend using Ethereum as collateral. Here's how it works:
+            </p>
+            <ol>
+              <li>Register for an account to get your Ethereum wallet</li>
+              <li>Request a loan by providing ETH as collateral</li>
+              <li>Lenders can accept your loan request and provide funds</li>
+              <li>Repay your loan before the deadline to get your collateral back</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

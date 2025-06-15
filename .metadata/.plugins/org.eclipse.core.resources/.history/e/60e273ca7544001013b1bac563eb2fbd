@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>DeFi Platform - Request Loan</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(to right, #0f2027, #203a43, #2c5364);
+      color: #fff;
+    }
+
+    .navbar {
+      background-color: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(12px);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .navbar a {
+      color: #ffffff;
+      text-decoration: none;
+      font-weight: 500;
+      margin-left: 20px;
+    }
+
+    .navbar a:hover {
+      color: #00e5ff;
+    }
+
+    .container {
+      max-width: 650px;
+      margin: 80px auto;
+      padding: 35px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 20px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      animation: slideIn 0.8s ease;
+    }
+
+    h3 {
+      text-align: center;
+      margin-bottom: 25px;
+      color: #00e5ff;
+    }
+
+    .user-info {
+      background-color: rgba(76, 175, 80, 0.15);
+      padding: 16px;
+      border-left: 4px solid #4caf50;
+      border-radius: 10px;
+      margin-bottom: 25px;
+    }
+
+    .user-info h4 {
+      margin-top: 0;
+      margin-bottom: 10px;
+      color: #a5d6a7;
+    }
+
+    .user-info p {
+      margin: 5px 0;
+      font-size: 14px;
+      color: #dcedc8;
+    }
+
+    label {
+      font-weight: 600;
+      display: block;
+      margin-bottom: 6px;
+      margin-top: 15px;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      background-color: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      font-size: 16px;
+    }
+
+    input[type="number"]::placeholder {
+      color: #ccc;
+    }
+
+    .form-group span {
+      font-size: 13px;
+      color: #ccc;
+      display: block;
+      margin-top: 4px;
+    }
+
+    .alert-warning {
+      background-color: rgba(255, 193, 7, 0.1);
+      border-left: 4px solid #ffc107;
+      padding: 14px;
+      border-radius: 10px;
+      margin-top: 20px;
+      font-size: 14px;
+    }
+
+    .alert-warning i {
+      margin-right: 8px;
+    }
+
+    .btn-submit {
+      margin-top: 25px;
+      width: 100%;
+      padding: 14px;
+      font-size: 16px;
+      font-weight: bold;
+      color: white;
+      background: linear-gradient(to right, #00c6ff, #0072ff);
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.3s ease-in-out;
+    }
+
+    .btn-submit:hover {
+      background: linear-gradient(to right, #0072ff, #00c6ff);
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 600px) {
+      .container {
+        margin: 40px 20px;
+        padding: 25px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ✅ Navbar -->
+<nav class="navbar">
+  <div><strong>DeFi Platform</strong></div>
+  <div>
+    
+    <a href="/loans">Loans</a>
+    <a href="/check-balance">Balance</a>
+    <a href="/logout">Logout</a>
+  </div>
+</nav>
+
+<!-- ✅ Loan Request Card -->
+<div class="container">
+  <h3>Request a New Loan</h3>
+
+  <!-- ✅ User Info -->
+  <div th:if="${currentUser}" class="user-info">
+    <h4>Borrower Information</h4>
+    <p><strong>Name:</strong> <span th:text="${currentUser.name}"></span></p>
+    <p><strong>Email:</strong> <span th:text="${currentUser.email}"></span></p>
+    <p><strong>Wallet Address:</strong> <span th:text="${currentUser.walletAddress}"></span></p>
+    <p><strong>Available Balance:</strong> <span th:text="${currentUser.balance}"></span> Units</p>
+  </div>
+
+  <!-- ✅ Loan Form -->
+  <form th:action="@{/loan/request}" method="post">
+    <input type="hidden" name="borrowerEmail" th:value="${currentUser?.email}">
+
+    <div class="form-group">
+      <label for="loanAmount">Loan Amount</label>
+      <input type="number" id="loanAmount" name="loanAmount" step="0.01" min="0.01" placeholder="Enter loan amount" required>
+      <span>Units</span>
+    </div>
+
+    <div class="form-group">
+      <label for="collateralEth">Collateral (ETH)</label>
+      <input type="number" id="collateralEth" name="collateralEth" step="0.001" min="0.001" placeholder="ETH to stake" required>
+      <span>The ETH amount you’re pledging as collateral</span>
+    </div>
+
+    <div class="form-group">
+      <label for="durationDays">Loan Duration</label>
+      <input type="number" id="durationDays" name="durationDays" min="1" value="30" required>
+      <span>Duration in days</span>
+    </div>
+
+    <div class="alert-warning">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+      By submitting this form, you agree to lock the specified ETH as collateral. Failure to repay in time will result in liquidation of your collateral.
+    </div>
+
+    <button type="submit" class="btn-submit">Submit Loan Request</button>
+  </form>
+</div>
+
+</body>
+</html>

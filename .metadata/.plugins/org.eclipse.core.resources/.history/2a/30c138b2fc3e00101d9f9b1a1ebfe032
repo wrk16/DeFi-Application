@@ -1,0 +1,5 @@
+package com.defi.service;
+
+public class SecurityConfig {
+
+}

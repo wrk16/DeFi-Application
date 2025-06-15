@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>DeFi Platform - Request Loan</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f8fa;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 30px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            margin-top: 0;
+            color: #2c3e50;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        input[type="email"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #e8f4fc;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .balance {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .error {
+            color: #e74c3c;
+            padding: 10px;
+            background-color: #fadbd8;
+            border-radius: 4px;
+            margin-top: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+<div th:replace="~{layout :: body(content=~{::content})}">
+    <div th:fragment="content">
+        <div class="row">
+            <div class="col-lg-6 offset-lg-3">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Request a New Loan</h3>
+                    </div>
+                    <div class="card-body">
+                        <form th:action="@{/loan/request}" method="post">
+                            <div class="mb-3">
+                                <label for="borrowerEmail" class="form-label">Borrower</label>
+                                <select class="form-select" id="borrowerEmail" name="borrowerEmail" required>
+                                    <option value="">Select your account</option>
+                                    <option th:each="user : ${users}" th:value="${user.email}"
+                                            th:text="${user.name + ' (' + user.email + ')'}"></option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="loanAmount" class="form-label">Loan Amount</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="loanAmount" name="loanAmount"
+                                           step="0.01" min="0.01" required>
+                                    <span class="input-group-text">Units</span>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="collateralEth" class="form-label">Collateral Amount</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="collateralEth" name="collateralEth"
+                                           step="0.001" min="0.001" required>
+                                    <span class="input-group-text">ETH</span>
+                                </div>
+                                <div class="form-text">The amount of ETH you'll provide as collateral</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="durationDays" class="form-label">Loan Duration</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="durationDays" name="durationDays"
+                                           min="1" value="30" required>
+                                    <span class="input-group-text">Days</span>
+                                </div>
+                            </div>
+
+                            <div class="alert alert-warning">
+                                <p class="mb-0">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                    By submitting this form, you agree to provide ETH as collateral for your loan.
+                                    If you fail to repay by the deadline, your collateral may be liquidated.
+                                </p>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">Submit Loan Request</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>DeFi Platform - Repay Loan</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background: linear-gradient(to right, #1f2c3a, #2c3e50);
+      color: #ecf0f1;
+      margin: 0;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: auto;
+      padding: 30px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 15px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(10px);
+    }
+
+    h3 {
+      text-align: center;
+      color: #00d9ff;
+    }
+
+    .alert {
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .alert-danger {
+      background-color: rgba(231, 76, 60, 0.08);
+      color: #ff6b6b;
+      border: 1px solid rgba(255, 99, 99, 0.4);
+    }
+
+    .loan-details {
+      background-color: rgba(255, 255, 255, 0.07);
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+
+    .loan-details h4 {
+      margin-top: 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      padding-bottom: 10px;
+    }
+
+    .loan-details dl {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 0;
+    }
+
+    .loan-details dt {
+      font-weight: bold;
+      color: #bdc3c7;
+    }
+
+    .loan-details dd {
+      margin: 0;
+      color: #ecf0f1;
+    }
+
+    .btn-group {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .btn {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 30px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .btn-secondary {
+      background: #7f8c8d;
+      color: white;
+    }
+
+    .btn-secondary:hover {
+      background: #95a5a6;
+    }
+
+    .btn-primary {
+      background: linear-gradient(90deg, #00c3ff, #0078ff);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(90deg, #0078ff, #00c3ff);
+    }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background: rgba(0, 0, 0, 0.7);
+    }
+
+    .modal-content {
+      background: #2c3e50;
+      margin: 15% auto;
+      padding: 30px;
+      border: 1px solid #888;
+      width: 90%;
+      max-width: 400px;
+      border-radius: 12px;
+      color: white;
+      text-align: center;
+    }
+
+    .progress-bar {
+      height: 15px;
+      background: #34495e;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 20px;
+    }
+
+    .progress-bar-inner {
+      height: 100%;
+      width: 0;
+      background: linear-gradient(to right, #00d2ff, #3a47d5);
+      transition: width 2s ease;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h3>Repay Loan</h3>
+
+  <!-- Error Message -->
+  <div th:if="${error}" class="alert alert-danger">
+    <p th:text="${error}"></p>
+    <div class="btn-group" style="justify-content: center;">
+      <a href="/my_loans" class="btn btn-secondary">Back</a>
+    </div>
+  </div>
+
+  <!-- Loan Details -->
+  <div th:if="${loan != null}">
+    <div class="loan-details">
+      <h4>Loan Details</h4>
+      <dl>
+        <dt>Loan ID:</dt>
+        <dd th:text="${loan.id}"></dd>
+
+        <dt>Amount:</dt>
+        <dd th:text="${loan.loanAmount + ' USDT'}"></dd>
+
+        <dt>Collateral:</dt>
+        <dd th:text="${loan.collateralEth + ' ETH'}"></dd>
+
+        <dt>Lender:</dt>
+        <dd th:text="${loan.lender.name}"></dd>
+
+        <dt>Deadline:</dt>
+        <dd th:text="${#temporals.format(loan.deadline, 'dd-MM-yyyy HH:mm')}"></dd>
+
+        <dt>Status:</dt>
+        <dd th:text="${loan.status}"></dd>
+      </dl>
+    </div>
+
+    <!-- Repayment Form -->
+    <form id="repayForm" th:action="@{/loan/repay}" method="post">
+      <input type="hidden" name="loanId" th:value="${loan.id}">
+      <div class="btn-group">
+        <a href="/my_loans" class="btn btn-secondary">Cancel</a>
+        <button type="button" class="btn btn-primary" onclick="showModal()">Repay Loan</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div id="confirmModal" class="modal">
+  <div class="modal-content">
+    <h4>Confirm Repayment</h4>
+    <p>Are you sure you want to repay this loan?</p>
+    <div class="btn-group" style="justify-content: center; margin-top: 20px;">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="startRepayment()">Confirm</button>
+    </div>
+    <div class="progress-bar" id="progressBar" style="display: none;">
+      <div class="progress-bar-inner" id="progressInner"></div>
+    </div>
+    <p id="walletInteraction" style="margin-top: 15px; display: none;">Interacting with Ethereum wallet...</p>
+  </div>
+</div>
+
+<script>
+  function showModal() {
+    document.getElementById('confirmModal').style.display = 'block';
+  }
+
+  function closeModal() {
+    document.getElementById('confirmModal').style.display = 'none';
+  }
+
+  function startRepayment() {
+    const progressBar = document.getElementById('progressBar');
+    const progressInner = document.getElementById('progressInner');
+    const walletText = document.getElementById('walletInteraction');
+
+    progressBar.style.display = 'block';
+    walletText.style.display = 'block';
+
+    setTimeout(() => {
+      progressInner.style.width = '100%';
+    }, 100);
+
+    setTimeout(() => {
+      document.getElementById('repayForm').submit();
+    }, 2500);
+  }
+</script>
+
+</body>
+</html>

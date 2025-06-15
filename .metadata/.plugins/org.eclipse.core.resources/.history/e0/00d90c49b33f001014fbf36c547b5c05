@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>DeFi Platform - Accept Loan</title>
+  <style>
+    body {
+        font-family: 'Arial', sans-serif;
+        line-height: 1.6;
+        margin: 0;
+        padding: 20px;
+        background-color: #f5f8fa;
+        color: #333;
+    }
+    .container {
+        max-width: 600px;
+        margin: 40px auto;
+        padding: 30px;
+        background-color: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    h1 {
+        margin-top: 0;
+        color: #2c3e50;
+        text-align: center;
+    }
+    .form-group {
+        margin-bottom: 20px;
+    }
+    label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: bold;
+    }
+    input[type="email"] {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 16px;
+    }
+    button {
+        background-color: #3498db;
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+        width: 100%;
+    }
+    button:hover {
+        background-color: #2980b9;
+    }
+    .result {
+        margin-top: 30px;
+        padding: 20px;
+        background-color: #e8f4fc;
+        border-radius: 4px;
+        text-align: center;
+    }
+    .balance {
+        font-size: 24px;
+        font-weight: bold;
+        color: #2c3e50;
+    }
+    .error {
+        color: #e74c3c;
+        padding: 10px;
+        background-color: #fadbd8;
+        border-radius: 4px;
+        margin-top: 20px;
+        text-align: center;
+    }
+  </style>
+</head>
+<body>
+<div th:replace="~{layout :: body(content=~{::content})}">
+  <div th:fragment="content">
+    <div class="row">
+      <div class="col-lg-6 offset-lg-3">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Accept Loan Request</h3>
+          </div>
+          <div class="card-body">
+            <p>You are about to accept loan #<span th:text="${loanId}"></span></p>
+
+            <form th:action="@{/loan/accept}" method="post">
+              <input type="hidden" name="loanId" th:value="${loanId}">
+
+              <div class="mb-3">
+                <label for="lenderEmail" class="form-label">Your Account (Lender)</label>
+                <select class="form-select" id="lenderEmail" name="lenderEmail" required>
+                  <option value="">Select your account</option>
+                  <option th:each="user : ${users}" th:value="${user.email}"
+                          th:text="${user.name + ' (' + user.email + ')'}"></option>
+                </select>
+              </div>
+
+              <div class="alert alert-info">
+                <p class="mb-0">
+                  <i class="bi bi-info-circle"></i>
+                  When you accept this loan, you'll receive the borrower's ETH collateral.
+                  If they repay the loan before the deadline, you must return their collateral.
+                </p>
+              </div>
+
+              <div class="d-flex justify-content-between">
+                <a href="/loans" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-success">Accept Loan</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

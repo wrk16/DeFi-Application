@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Login | DeFi Platform</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    :root {
+      --bg-light: #ffffff;
+      --bg-dark: #121212;
+      --text-light: #1a1a1a;
+      --text-dark: #f1f1f1;
+      --primary: #007bff;
+      --input-bg: #f0f4f8;
+      --border-light: #dee2e6;
+      --card-light: #ffffff;
+      --shadow-light: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', sans-serif;
+      height: 100%;
+      background-color: var(--bg-dark);
+      color: var(--text-dark);
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    body.light {
+      background-color: var(--bg-light);
+      color: var(--text-light);
+    }
+
+    .container {
+      display: flex;
+      flex-direction: row;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .left-section {
+      width: 45%;
+      padding: 4rem 3rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .intro-text {
+      font-size: 1.8rem;
+      text-align: center;
+      color: var(--primary);
+      margin-bottom: 2rem;
+      animation: fadeInIntro 1s ease-out;
+    }
+
+    @keyframes fadeInIntro {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .login-card {
+      width: 100%;
+      max-width: 400px;
+      background-color: rgba(0, 0, 0, 0.7);
+      padding: 2rem;
+      border-radius: 1rem;
+      box-shadow: 0 0 20px rgba(0,0,0,0.3);
+    }
+
+    .login-card h2 {
+      text-align: center;
+      color: var(--primary);
+      margin-bottom: 1.5rem;
+    }
+
+    .login-card label {
+      display: block;
+      margin-top: 1rem;
+    }
+
+    .login-card input {
+      width: 100%;
+      padding: 0.7rem;
+      margin-top: 0.3rem;
+      border: none;
+      border-radius: 0.5rem;
+    }
+
+    .login-card button {
+      margin-top: 1rem;
+      width: 100%;
+      padding: 0.8rem;
+      background-color: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 0.5rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .login-card a {
+      display: block;
+      text-align: center;
+      margin-top: 1rem;
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    .right-section {
+      flex: 1;
+      position: relative;
+      background: url('images/bg1.png') no-repeat center center / cover;
+    }
+
+    .overlay-text {
+      position: absolute;
+      bottom: 30px;
+      left: 30px;
+      background-color: rgba(0, 0, 0, 0.7);
+      padding: 2rem;
+      border-radius: 1rem;
+      max-width: 500px;
+      color: #fff;
+      text-align: left;
+      animation: fadeInUp 1.2s ease-out;
+    }
+
+    .overlay-text h3 {
+      margin-bottom: 1rem;
+      font-size: 1.8rem;
+    }
+
+    .overlay-text p {
+      font-size: 1rem;
+      line-height: 1.5;
+    }
+
+    @keyframes fadeInUp {
+      0% {
+        transform: translateY(20px);
+        opacity: 0;
+      }
+      100% {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .theme-toggle {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: none;
+      border: 2px solid var(--primary);
+      padding: 0.5rem 1rem;
+      color: var(--primary);
+      cursor: pointer;
+      border-radius: 0.5rem;
+      font-weight: bold;
+      z-index: 999;
+    }
+
+    body.light .login-card {
+      background-color: var(--card-light);
+      color: var(--text-light);
+      box-shadow: var(--shadow-light);
+    }
+
+    body.light input {
+      background-color: var(--input-bg);
+      color: var(--text-light);
+      border: 1px solid var(--border-light);
+    }
+
+    body.light .theme-toggle {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    body.light a {
+      color: var(--primary);
+    }
+
+    body.light .overlay-text {
+      background-color: rgba(0, 0, 0, 0.8);
+      color: #ffffff;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        flex-direction: column;
+      }
+
+      .left-section, .right-section {
+        width: 100%;
+        height: auto;
+        padding: 2rem;
+      }
+
+      .right-section {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .overlay-text {
+        position: static;
+        margin-top: 1.5rem;
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <button class="theme-toggle" onclick="toggleTheme()">Switch to Light Theme</button>
+
+  <div class="container">
+    <div class="left-section">
+      <h1 class="intro-text">Welcome to Decentralized Finance Application</h1> <!-- Added Heading -->
+      <div class="login-card">
+        <h2>Welcome Back</h2>
+        <form th:action="@{/login}" method="post">
+          <label for="username">Email</label>
+          <input type="text" id="username" name="username" required>
+
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" required>
+
+          <button type="submit">Login</button>
+
+          <a th:href="@{/register}">Don't have an account? Register here</a>
+
+          <div th:if="${param.error}" style="color:red; text-align:center;">Invalid username or password</div>
+          <div th:if="${param.logout}" style="color:green; text-align:center;">You have been logged out</div>
+        </form>
+      </div>
+    </div>
+
+    <div class="right-section">
+      <div class="overlay-text">
+        <h3>Empowering Decentralized Finance</h3>
+        <p>Our platform lets you lend, borrow, and manage assets securely and transparently — powered by blockchain and Ethereum.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const savedTheme = localStorage.getItem("theme") || "dark";
+    document.body.classList.add(savedTheme);
+    updateButtonText(savedTheme);
+
+    function toggleTheme() {
+      const currentTheme = document.body.classList.contains("light") ? "light" : "dark";
+      const newTheme = currentTheme === "light" ? "dark" : "light";
+      document.body.classList.remove(currentTheme);
+      document.body.classList.add(newTheme);
+      localStorage.setItem("theme", newTheme);
+      updateButtonText(newTheme);
+    }
+
+    function updateButtonText(theme) {
+      const btn = document.querySelector('.theme-toggle');
+      btn.textContent = theme === "dark" ? "☀️" : "🌙";
+    }
+  </script>
+</body>
+</html>

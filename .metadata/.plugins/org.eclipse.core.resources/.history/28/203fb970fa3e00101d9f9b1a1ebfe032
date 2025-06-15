@@ -1,0 +1,169 @@
+package com.defi.controller;
+
+import com.defi.entity.Loan;
+import com.defi.entity.User;
+import com.defi.service.LoanService;
+import com.defi.service.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+
+import java.math.BigDecimal;
+import java.util.List;
+
+@Controller
+public class WebController {
+
+    @Autowired
+    private UserService userService;
+
+    @Autowired
+    private LoanService loanService;
+
+    // Home page, show user info
+    @GetMapping("/")
+    public String home(Authentication authentication, Model model) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            // Redirect to login if not authenticated (optional, Spring Security can handle it)
+            return "redirect:/login";
+        }
+
+        String username = authentication.getName();
+        User user = userService.getUserByEmail(username);
+        model.addAttribute("user", user);
+
+        return "index"; // Your Thymeleaf home page
+    }
+
+    // Registration remains same
+    @GetMapping("/register")
+    public String showRegistrationForm(Model model) {
+        model.addAttribute("user", new User());
+        return "register";
+    }
+
+    @PostMapping("/register")
+    public String registerUser(@ModelAttribute User user, Model model) {
+        try {
+            User registeredUser = userService.registerUser(user.getName(), user.getEmail(), user.getPassword());
+            model.addAttribute("success", "Registration successful! Your wallet address: " + registeredUser.getWalletAddress());
+            return "index";
+        } catch (Exception e) {
+            model.addAttribute("error", "Registration failed: " + e.getMessage());
+            return "index";
+        }
+    }
+
+    // Show available loans - can personalize based on user if needed
+    @GetMapping("/loans")
+    public String showLoans(Authentication authentication, Model model) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return "login";
+        }
+        List<Loan> availableLoans = loanService.getAvailableLoans();
+        model.addAttribute("loans", availableLoans);
+        return "loans";
+    }
+
+    // Loan request form - no need to pass all users, just use current logged-in user as borrower
+    @GetMapping("/loan/request")
+    public String showLoanRequestForm(Authentication authentication, Model model) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return "login";
+        }
+        model.addAttribute("loanRequest", new Loan());
+        return "loan-request";
+    }
+
+    // Process loan request using logged-in user email as borrower
+    @PostMapping("/loan/request")
+    public String requestLoan(@RequestParam BigDecimal loanAmount,
+                              @RequestParam BigDecimal collateralEth,
+                              @RequestParam int durationDays,
+                              Authentication authentication,
+                              Model model) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return "redirect:/login";
+        }
+
+        String borrowerEmail = authentication.getName();
+
+        try {
+            Loan loan = loanService.requestLoan(borrowerEmail, loanAmount, collateralEth, durationDays);
+            model.addAttribute("success", "Loan request submitted successfully. Loan ID: " + loan.getId());
+            return "redirect:/loans";
+        } catch (Exception e) {
+            model.addAttribute("error", "Failed to request loan: " + e.getMessage());
+            return "loan-request";
+        }
+    }
+
+    // Loan accept form - lender is logged-in user, no need to pass users list in model
+    @GetMapping("/loan/accept/{id}")
+    public String showLoanAcceptForm(@PathVariable Long id, Authentication authentication, Model model) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return "redirect:/login";
+        }
+
+        model.addAttribute("loanId", id);
+        return "loan-accept";
+    }
+
+    @PostMapping("/loan/accept")
+    public String acceptLoan(@RequestParam Long loanId,
+                             Authentication authentication,
+                             Model model) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return "redirect:/login";
+        }
+
+        String lenderEmail = authentication.getName();
+
+        try {
+            loanService.acceptLoan(lenderEmail, loanId);
+            model.addAttribute("success", "Loan accepted successfully");
+            return "redirect:/loans";
+        } catch (Exception e) {
+            model.addAttribute("error", "Failed to accept loan: " + e.getMessage());
+            model.addAttribute("loanId", loanId);
+            return "loan-accept";
+        }
+    }
+
+    // Loan repay form
+    @GetMapping("/loan/repay/{id}")
+    public String showLoanRepayForm(@PathVariable Long id, Authentication authentication, Model model) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return "redirect:/login";
+        }
+        model.addAttribute("loanId", id);
+        return "loan-repay-form";
+    }
+
+    @GetMapping("/loan/repay")
+    public String showLoanRepayForm(Authentication authentication, Model model) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return "redirect:/login";
+        }
+        return "loan-repay-form";
+    }
+
+    @PostMapping("/loan/repay")
+    public String repayLoan(@RequestParam Long loanId, Authentication authentication, Model model) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return "redirect:/login";
+        }
+        try {
+            loanService.repayLoan(loanId);
+            model.addAttribute("success", "Loan repaid successfully");
+            return "redirect:/loans";
+        } catch (Exception e) {
+            model.addAttribute("error", "Failed to repay loan: " + e.getMessage());
+            model.addAttribute("loanId", loanId);
+            return "loan-repay-form";
+        }
+    }
+
+}

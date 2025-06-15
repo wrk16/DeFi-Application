@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>DeFi Platform - Available Loans</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(145deg, #0f2027, #203a43, #2c5364);
+      color: #ffffff;
+      padding: 0;
+    }
+
+    .navbar {
+      background-color: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(12px);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      position: sticky;
+      top: 0;
+      z-index: 999;
+    }
+
+    .navbar a {
+      color: #ffffff;
+      text-decoration: none;
+      font-weight: 500;
+      margin-left: 20px;
+      transition: color 0.3s;
+    }
+
+    .navbar a:hover {
+      color: #00e5ff;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 50px auto;
+      padding: 30px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 20px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      animation: fadeIn 0.8s ease;
+    }
+
+    h2 {
+      font-size: 26px;
+      margin-bottom: 20px;
+      color: #ffffff;
+    }
+
+    .table-responsive {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    th, td {
+      padding: 14px;
+      text-align: left;
+    }
+
+    thead {
+      background-color: rgba(255, 255, 255, 0.08);
+    }
+
+    tbody tr {
+      background-color: rgba(255, 255, 255, 0.04);
+      transition: background 0.3s;
+    }
+
+    tbody tr:hover {
+      background-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .badge {
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .bg-warning { background-color: #f39c12; color: #fff; }
+    .bg-primary { background-color: #3498db; color: #fff; }
+    .bg-success { background-color: #2ecc71; color: #fff; }
+    .bg-danger  { background-color: #e74c3c; color: #fff; }
+
+    .btn {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      margin-right: 6px;
+      transition: background 0.3s;
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, #00c853, #43a047);
+      color: #fff;
+    }
+
+    .btn-success:hover {
+      background: linear-gradient(135deg, #43a047, #00c853);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #2196f3, #00bcd4);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #00bcd4, #2196f3);
+    }
+
+    .alert-info {
+      padding: 16px;
+      border-radius: 10px;
+      background-color: rgba(0, 188, 212, 0.1);
+      color: #00e5ff;
+      text-align: center;
+      font-size: 16px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 768px) {
+      .navbar {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .navbar a {
+        margin: 10px 0 0 0;
+      }
+
+      table, thead, tbody, th, td, tr {
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ✅ Navbar -->
+<nav class="navbar">
+  <div><strong>DeFi Platform</strong></div>
+  <div>
+
+    <a href="/loans">Loans</a>
+    <a href="/check-balance">Balance</a>
+    <a href="/loan/request">Request a new Loan</a>
+    <a href="/my_loans">My Loans</a>
+    <a href="/logout">Logout</a>
+
+  </div>
+</nav>
+
+<!-- ✅ Page Content -->
+<div class="container">
+  <h2>Available Loans</h2>
+
+  <div class="row">
+    <div class="col-lg-12">
+      <div th:if="${#lists.isEmpty(loans)}" class="alert-info">
+        No loans are currently available.
+      </div>
+
+      <div th:unless="${#lists.isEmpty(loans)}" class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Borrower</th>
+              <th>Loan Amount</th>
+              <th>Collateral (ETH)</th>
+              <th>Request Time</th>
+              <th>Deadline</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="loan : ${loans}">
+              <td th:text="${loan.borrower.email}"></td>
+              <td th:text="${loan.loanAmount}"></td>
+              <td th:text="${loan.collateralEth}"></td>
+              <td th:text="${#temporals.format(loan.requestTime, 'yyyy-MM-dd HH:mm')}"></td>
+              <td th:text="${#temporals.format(loan.deadline, 'yyyy-MM-dd HH:mm')}"></td>
+              <td>
+                <span th:if="${loan.status.name() == 'PENDING'}" class="badge bg-warning">Pending</span>
+                <span th:if="${loan.status.name() == 'ACTIVE'}" class="badge bg-primary">Active</span>
+                <span th:if="${loan.status.name() == 'REPAID'}" class="badge bg-success">Repaid</span>
+                <span th:if="${loan.status.name() == 'DEFAULTED'}" class="badge bg-danger">Defaulted</span>
+              </td>
+              <td>
+                <a th:if="${loan.status.name() == 'PENDING'}"
+                   th:href="@{/loan/accept/{id}(id=${loan.id})}"
+                   class="btn btn-success">Accept</a>
+                
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

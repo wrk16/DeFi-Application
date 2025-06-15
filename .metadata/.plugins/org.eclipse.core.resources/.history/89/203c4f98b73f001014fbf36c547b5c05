@@ -1,0 +1,159 @@
+package com.defi.service;
+
+import com.defi.entity.Loan;
+import com.defi.entity.User;
+import com.defi.repository.LoanRepository;
+import com.defi.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.NoSuchElementException;
+
+@Service
+public class LoanService {
+
+    @Autowired
+    private LoanRepository loanRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    BlockchainService blockchainService;
+
+    public Loan requestLoan(String borrowerEmail, BigDecimal loanAmount, BigDecimal collateralEth, int durationDays) {
+        User borrower = userRepository.findByEmail(borrowerEmail)
+                .orElseThrow(() -> new NoSuchElementException("Borrower not found"));
+
+        Loan loan = new Loan(borrower, loanAmount, collateralEth, LocalDateTime.now().plusDays(durationDays));
+        return loanRepository.save(loan);
+    }
+
+    public List<Loan> getAvailableLoans() {
+        return loanRepository.findByStatus(Loan.LoanStatus.PENDING);
+    }
+    public List<Loan> getAvailableLoansExcludingCurrentUser(String email) {
+        return loanRepository.findByStatusAndBorrower_EmailNot(Loan.LoanStatus.PENDING, email);
+    }
+    public Loan acceptLoan(String lenderEmail, Long loanId) throws Exception {
+        User lender = userRepository.findByEmail(lenderEmail)
+                .orElseThrow(() -> new NoSuchElementException("Lender not found"));
+
+        Loan loan = loanRepository.findById(loanId)
+                .orElseThrow(() -> new NoSuchElementException("Loan request not found"));
+
+        if (loan.getStatus() != Loan.LoanStatus.PENDING) {
+            throw new IllegalStateException("Loan is no longer available");
+        }
+        
+
+        User borrower = loan.getBorrower();
+
+        // Check Borrower's ETH Balance on Ethereum
+        lender.withdraw(loan.getLoanAmount());
+        borrower.deposit(loan.getLoanAmount());
+
+        BigDecimal borrowerBalance = blockchainService.getEthereumBalance(borrower.getWalletAddress());
+        if (borrowerBalance.compareTo(loan.getCollateralEth()) < 0) {
+            throw new IllegalStateException("Insufficient ETH balance for collateral.");
+        }
+
+        // Transfer Borrower's ETH to Lender as Collateral
+        String transactionHash = blockchainService.sendEthereum(
+                borrower.getPrivateKey(),  // Borrower's private key
+                lender.getWalletAddress(), // Lender's wallet address
+                loan.getCollateralEth()     // Collateral amount in ETH
+        );
+
+        if (transactionHash == null) {
+            throw new RuntimeException("ETH Transfer failed.");
+        }
+
+        // Update Loan Status
+        loan.setLender(lender);
+        loan.setStatus(Loan.LoanStatus.ACTIVE);
+        return loanRepository.save(loan);
+    }
+    public List<Loan> getLoanHistoryForUser(String email) {
+        User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new NoSuchElementException("User not found"));
+
+        return loanRepository.findByBorrowerAndStatusIn(
+            user,
+            List.of(Loan.LoanStatus.PENDING, Loan.LoanStatus.ACTIVE, Loan.LoanStatus.REPAID)
+        );
+    }
+
+    public void deletePendingLoan(Long loanId) {
+        Loan loan = loanRepository.findById(loanId)
+                .orElseThrow(() -> new NoSuchElementException("Loan not found"));
+
+        if (loan.getStatus() != Loan.LoanStatus.PENDING) {
+            throw new IllegalStateException("Only PENDING loans can be deleted.");
+        }
+
+        loanRepository.delete(loan);
+    }
+
+
+    public void repayLoan(Long loanId) throws Exception {
+        Loan loan = loanRepository.findById(loanId)
+                .orElseThrow(() -> new NoSuchElementException("Loan not found"));
+
+        if (loan.getStatus() != Loan.LoanStatus.ACTIVE) {
+            throw new IllegalStateException("Loan is not active");
+        }
+
+        User borrower = loan.getBorrower();
+        User lender = loan.getLender();
+        borrower.deposit(loan.getLoanAmount());
+        lender.withdraw(loan.getLoanAmount());
+        // Transfer ETH back to borrower
+        String txHash = blockchainService.sendEthereum(
+                lender.getPrivateKey(),  // Lender sends ETH back to borrower
+                borrower.getWalletAddress(),
+                loan.getCollateralEth()
+        );
+
+        if (txHash == null) {
+            throw new RuntimeException("ETH Transfer failed.");
+        }
+
+        // Mark loan as repaid
+        loan.setStatus(Loan.LoanStatus.REPAID);
+        loanRepository.save(loan);
+    }
+
+    public void liquidateLoan(Long loanId) throws Exception {
+        Loan loan = loanRepository.findById(loanId)
+                .orElseThrow(() -> new NoSuchElementException("Loan not found"));
+
+        if (loan.getStatus() != Loan.LoanStatus.ACTIVE || LocalDateTime.now().isBefore(loan.getDeadline())) {
+            throw new IllegalStateException("Loan cannot be liquidated yet");
+        }
+
+        User borrower = loan.getBorrower();
+        User lender = loan.getLender();
+
+        // Send ETH collateral to lender
+        String txHash = blockchainService.sendEthereum(
+                borrower.getPrivateKey(),  // Borrower sends ETH to lender
+                lender.getWalletAddress(),
+                loan.getCollateralEth()
+        );
+
+        if (txHash == null) {
+            throw new RuntimeException("ETH Transfer failed.");
+        }
+
+        // Mark loan as DEFAULTED
+        loan.setStatus(Loan.LoanStatus.DEFAULTED);
+        loanRepository.save(loan);
+    }
+}
+

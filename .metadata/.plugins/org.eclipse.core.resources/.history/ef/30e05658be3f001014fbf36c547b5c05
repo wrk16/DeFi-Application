@@ -1,0 +1,299 @@
+package com.defi.controller;
+
+import com.defi.entity.Loan;
+import com.defi.entity.User;
+import com.defi.service.LoanService;
+import com.defi.service.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Optional;
+
+@Controller
+public class WebController {
+
+    @Autowired
+    private UserService userService;
+
+    @Autowired
+    private LoanService loanService;
+
+    // === Login/Logout Handling ===
+    @GetMapping("/login")
+    public String login(@RequestParam(value = "error", required = false) String error,
+                       @RequestParam(value = "logout", required = false) String logout,
+                       @RequestParam(value = "registered", required = false) String registered,
+                       Model model) {
+        
+        if (error != null) {
+            model.addAttribute("error", "Invalid username or password");
+        }
+        
+        if (logout != null) {
+            model.addAttribute("logout", "You have been logged out successfully");
+        }
+
+        if (registered != null) {
+            model.addAttribute("success", "Registration successful! You can now login.");
+        }
+        
+        return "login";
+    }
+    
+    @GetMapping("/")
+    public String login2(@RequestParam(value = "error", required = false) String error,
+                       @RequestParam(value = "logout", required = false) String logout,
+                       @RequestParam(value = "registered", required = false) String registered,
+                       Model model) {
+        
+        if (error != null) {
+            model.addAttribute("error", "Invalid username or password");
+        }
+        
+        if (logout != null) {
+            model.addAttribute("logout", "You have been logged out successfully");
+        }
+
+        if (registered != null) {
+            model.addAttribute("success", "Registration successful! You can now login.");
+        }
+        
+        return "login";
+    }
+
+    @GetMapping("/logout")
+    public String logout() {
+        return "redirect:/login?logout";
+    }
+
+    // === Registration ===
+    @GetMapping("/register")
+    public String showRegistrationForm(Model model) {
+        model.addAttribute("user", new User());
+        return "register";
+    }
+
+    @PostMapping("/register")
+    public String registerUser(@ModelAttribute User user, Model model) {
+        try {
+            User registeredUser = userService.registerUser(
+                    user.getName(),
+                    user.getEmail(),
+                    user.getPassword()
+            );
+            model.addAttribute("success", "Registration successful! Wallet Address: " + registeredUser.getWalletAddress());
+            return "redirect:/login?registered";
+        } catch (Exception e) {
+            model.addAttribute("error", "Registration failed: " + e.getMessage());
+            model.addAttribute("user", user); // Keep form data
+            return "register";
+        }
+    }
+
+    // === View Available Loans ===
+    @GetMapping("/loans")
+    public String showLoans(Model model, Authentication authentication) {
+        if (authentication != null) {
+            String email = authentication.getName();
+            
+            // Get loans excluding current user's own loan requests
+            List<Loan> availableLoans = loanService.getAvailableLoansExcludingCurrentUser(email);
+            model.addAttribute("loans", availableLoans);
+
+            // Add current user info to model
+            Optional<User> user = userService.getUserByEmail(email);
+            user.ifPresent(u -> model.addAttribute("currentUser", u));
+        } else {
+            // If no user is authenticated, don't show any loans
+            model.addAttribute("loans", List.of());
+        }
+
+        return "loans";
+    }
+    @GetMapping("/my_loans")
+    public String showMyLoans(Model model, Authentication authentication) {
+        if (authentication != null) {
+            String email = authentication.getName();
+            
+            // Get loans excluding current user's own loan requests
+            List<Loan> availableLoans = loanService.getLoanHistoryForUser(email);
+            model.addAttribute("loans", availableLoans);
+
+            // Add current user info to model
+            Optional<User> user = userService.getUserByEmail(email);
+            user.ifPresent(u -> model.addAttribute("currentUser", u));
+        } else {
+            // If no user is authenticated, don't show any loans
+            model.addAttribute("loans", List.of());
+        }
+
+        return "my_loans";
+    }
+    @PostMapping("/loan/delete/{id}")
+    public String deleteLoan(@PathVariable Long id, 
+                            Authentication authentication,
+                            RedirectAttributes redirectAttributes) {
+        try {
+            // Get the current user
+            String username = authentication.getName();
+            
+            // Call service method to delete the loan
+            loanService.deletePendingLoan(id);
+            
+            // Add success message
+            redirectAttributes.addFlashAttribute("successMessage", 
+                "Loan deleted successfully!");
+            
+        } catch (NoSuchElementException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", 
+                "Loan not found.");
+        } catch (IllegalStateException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", 
+                e.getMessage());
+        } catch (SecurityException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", 
+                "You are not authorized to delete this loan.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", 
+                "An error occurred while deleting the loan.");
+        }
+        
+        return "redirect:/my_loans";
+    }
+
+
+    // === Request Loan ===
+    @GetMapping("/loan/request")
+    public String showLoanRequestForm(Model model, Authentication authentication) {
+        model.addAttribute("loanRequest", new Loan());
+        
+        // Add current user info - this is now required since we're using it in the form
+        if (authentication != null) {
+            String email = authentication.getName();
+            Optional<User> user = userService.getUserByEmail(email);
+            if (user.isPresent()) {
+                model.addAttribute("currentUser", user.get());
+            } else {
+                model.addAttribute("error", "User not found. Please log in again.");
+                return "redirect:/login";
+            }
+        } else {
+            return "redirect:/login";
+        }
+        
+        return "loan-request";
+    }
+
+    @PostMapping("/loan/request")
+    public String requestLoan(@RequestParam BigDecimal loanAmount,
+                              @RequestParam BigDecimal collateralEth,
+                              @RequestParam int durationDays,
+                              Authentication authentication,
+                              Model model) {
+        try {
+            // Use the authenticated user's email directly
+            String borrowerEmail = authentication.getName();
+            
+            // Verify the user exists
+            Optional<User> userOptional = userService.getUserByEmail(borrowerEmail);
+            if (userOptional.isEmpty()) {
+                model.addAttribute("error", "User not found. Please log in again.");
+                return "redirect:/login";
+            }
+            
+            Loan loan = loanService.requestLoan(borrowerEmail, loanAmount, collateralEth, durationDays);
+            model.addAttribute("success", "Loan request submitted successfully. Loan ID: " + loan.getId());
+            return "redirect:/loans";
+        } catch (Exception e) {
+            model.addAttribute("error", "Loan request failed: " + e.getMessage());
+            model.addAttribute("loanRequest", new Loan());
+            
+            // Re-add user info for the form
+            String email = authentication.getName();
+            Optional<User> user = userService.getUserByEmail(email);
+            user.ifPresent(u -> model.addAttribute("currentUser", u));
+            
+            return "loan-request";
+        }
+    }
+
+    // === Accept Loan ===
+    @GetMapping("/loan/accept/{id}")
+    public String showLoanAcceptForm(@PathVariable Long id, Model model, Authentication authentication) {
+        model.addAttribute("loanId", id);
+        
+        // Add current user info
+        if (authentication != null) {
+            String email = authentication.getName();
+            Optional<User> user = userService.getUserByEmail(email);
+            user.ifPresent(u -> model.addAttribute("currentUser", u));
+        }
+        
+        return "loans";
+    }
+
+    @PostMapping("/loan/accept")
+    public String acceptLoan(@RequestParam Long loanId,
+                             Authentication authentication,
+                             Model model) {
+        try {
+            String lenderEmail = authentication.getName();
+            loanService.acceptLoan(lenderEmail, loanId);
+            model.addAttribute("success", "Loan accepted successfully");
+            return "redirect:/loans";
+        } catch (Exception e) {
+            model.addAttribute("error", "Failed to accept loan: " + e.getMessage());
+            model.addAttribute("loanId", loanId);
+            
+            // Re-add user info
+            String email = authentication.getName();
+            Optional<User> user = userService.getUserByEmail(email);
+            user.ifPresent(u -> model.addAttribute("currentUser", u));
+            
+            return "loan-accept";
+        }
+    }
+
+    // === Repay Loan ===
+    @GetMapping("/loan/repay/{id}")
+    public String showLoanRepayForm(@PathVariable Long id, Model model, Authentication authentication) {
+        model.addAttribute("loanId", id);
+        
+        // Add current user info
+        if (authentication != null) {
+            String email = authentication.getName();
+            Optional<User> user = userService.getUserByEmail(email);
+            user.ifPresent(u -> model.addAttribute("currentUser", u));
+        }
+        
+        return "loan-repay-confirmation";
+    }
+
+    @PostMapping("/loan/repay/{loanId}")
+    public String repayLoan(@PathVariable Long loanId,
+                            Authentication authentication,
+                            Model model) {
+        try {
+            loanService.repayLoan(loanId);
+            model.addAttribute("success", "Loan repaid successfully");
+            return "redirect:/loans";
+        } catch (Exception e) {
+            model.addAttribute("error", "Failed to repay loan: " + e.getMessage());
+            model.addAttribute("loanId", loanId);
+            
+            // Re-add user info
+            String email = authentication.getName();
+            Optional<User> user = userService.getUserByEmail(email);
+            user.ifPresent(u -> model.addAttribute("currentUser", u));
+            
+            return "loan-repay-confirmation";
+        }
+    }
+}

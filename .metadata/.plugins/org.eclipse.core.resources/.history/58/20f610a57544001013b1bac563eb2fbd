@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>DeFi Platform - Accept Loan</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(to right, #0f2027, #203a43, #2c5364);
+      color: #fff;
+    }
+
+    .navbar {
+      background-color: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(12px);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .navbar a {
+      color: #ffffff;
+      text-decoration: none;
+      font-weight: 500;
+      margin-left: 20px;
+      transition: color 0.3s;
+    }
+
+    .navbar a:hover {
+      color: #00e5ff;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 80px auto;
+      padding: 30px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 20px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      animation: fadeIn 0.8s ease;
+    }
+
+    h3 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #00e5ff;
+    }
+
+    .info-box {
+      background-color: rgba(0, 188, 212, 0.15);
+      border-left: 4px solid #00e5ff;
+      padding: 16px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+
+    .info-box i {
+      margin-right: 8px;
+    }
+
+    .btn-group {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .btn {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 15px;
+      cursor: pointer;
+      transition: background 0.3s;
+      text-decoration: none;
+      text-align: center;
+      flex: 1;
+    }
+
+    .btn-secondary {
+      background-color: #7f8c8d;
+      color: #fff;
+    }
+
+    .btn-secondary:hover {
+      background-color: #95a5a6;
+    }
+
+    .btn-success {
+      background: linear-gradient(to right, #00c853, #43a047);
+      color: #fff;
+    }
+
+    .btn-success:hover {
+      background: linear-gradient(to right, #43a047, #00c853);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 600px) {
+      .btn-group {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ✅ Navbar -->
+<nav class="navbar">
+  <div><strong>DeFi Platform</strong></div>
+  <div>
+    <a href="/">Dashboard</a>
+    <a href="/loans">Loans</a>
+    <a href="/check-balance">Balance</a>
+    <a href="/logout">Logout</a>
+  </div>
+</nav>
+
+<!-- ✅ Page Content -->
+<div class="container">
+  <h3>Accept Loan Request</h3>
+
+  <p style="text-align:center;">You are about to accept loan <strong>#<span th:text="${loanId}"></span></strong></p>
+    <p style="text-align:center;">Loan Amount is <strong>#<span th:text="${loanId}"></span></strong></p>
+
+  <form th:action="@{/loan/accept}" method="post">
+    <input type="hidden" name="loanId" th:value="${loanId}">
+    
+    <div class="info-box">
+      <i class="bi bi-info-circle"></i>
+      When you accept this loan, you'll receive the borrower's ETH collateral. If they repay before the deadline, you must return it.
+    </div>
+
+    <div class="btn-group">
+      <a href="/loans" class="btn btn-secondary">Cancel</a>
+      <button type="submit" class="btn btn-success">Accept Loan</button>
+    </div>
+  </form>
+</div>
+
+</body>
+</html>
